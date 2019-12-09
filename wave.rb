@@ -13,9 +13,9 @@ tuesdays_with_waves = Hash.new()
 wednesdays_with_waves = Hash.new()
 thursdays_with_waves = Hash.new()
 fridays_with_waves = Hash.new()
-#closingday_wave = Hash.new()
+closingdays_with_waves = Array.new()
 
-period_month = (Date.new(2009,11)..Date.new(2019,11)).select {|d| d.day == 1}
+period_month = (Date.new(2015,06)..Date.new(2019,11)).select {|d| d.day == 1}
 period_month_csv = period_month.map do |ele|
   "./data/" + ele.strftime("%Y%m") + ".csv"
 end
@@ -301,21 +301,49 @@ puts "下跌機率#{total_negative_odds}"
 puts "下跌中位數#{total_median_negative_wave}點"
 puts "下跌平均數#{total_avg_negative_wave}點"
 puts "最大下跌#{total_min}"
-# continuse days
 
-#wednesday.each do |day| 
-#	yesterday = day.prev_day
-#	before_yesterday = yesterday.prev_day
-#	if ((tuesday.include? yesterday) && (monday.include? before_yesterday))
-#		tuesday_wave = (tuesdays_with_end_prices[yesterday] - mondays_with_end_prices[before_yesterday]).round(2)
-#		wednesday_wave = (wednesdays_with_end_prices[day] - tuesdays_with_end_prices[yesterday]).round(2)
-#		closingday_wave[day.strftime("%Y/%m/%d")] = [tuesday_wave,wednesday_wave]
-#	else
-		# no_continue_days << day
-#	end
-#end
+wednesdays.each do |day| 
+	yesterday = day.prev_day
+	before_yesterday = yesterday.prev_day
+	if ((tuesdays.include? yesterday) && (mondays.include? before_yesterday))
+		tuesday_wave = (tuesdays_with_end_prices[yesterday] - mondays_with_end_prices[before_yesterday]).round(2)
+		wednesday_wave = (wednesdays_with_end_prices[day] - tuesdays_with_end_prices[yesterday]).round(2)
+		closingdays_with_waves << [tuesday_wave,wednesday_wave]
+	else
+		#puts day
+	end
+end
 
+closingdays_positive_waves = closingdays_with_waves.select { |e| e.last > 0 }
+closingdays_negative_waves = closingdays_with_waves.select { |e| e.last < 0 }
+closingday_call = (closingdays_positive_waves.map { |e| e.last }.inject(0, :+)/closingdays_with_waves.size).round(2)
+closingday_put = (closingdays_negative_waves.map { |e| e.last }.inject(0, :+)/closingdays_with_waves.size).round(2)
 
-
-
-
+over = 50
+closingdays_yesterday_over_positive = closingdays_with_waves.select { |e| e.first >= over }
+closingdays_yesterday_over_negative = closingdays_with_waves.select { |e| e.first <= -over }
+closingdays_yesterday_small_positive = closingdays_with_waves.select { |e| e.first > 0 && e.first < over }
+closingdays_yesterday_small_negative = closingdays_with_waves.select { |e| e.first < 0 && e.first > -over }
+closingdays_yesterday_small_positive_call = (closingdays_yesterday_small_positive.select { |e| e.last > 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_small_positive.size).round(2)
+closingdays_yesterday_small_positive_put = (closingdays_yesterday_small_positive.select { |e| e.last < 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_small_positive.size).round(2)
+closingdays_yesterday_small_negative_call = (closingdays_yesterday_small_negative.select { |e| e.last > 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_small_negative.size).round(2)
+closingdays_yesterday_small_negative_put = (closingdays_yesterday_small_negative.select { |e| e.last < 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_small_negative.size).round(2)
+closingdays_yesterday_over_positive_call = (closingdays_yesterday_over_positive.select { |e| e.last > 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_over_positive.size).round(2)
+closingdays_yesterday_over_positive_put = (closingdays_yesterday_over_positive.select { |e| e.last < 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_over_positive.size).round(2)
+closingdays_yesterday_over_negative_call = (closingdays_yesterday_over_negative.select { |e| e.last > 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_over_negative.size).round(2)
+closingdays_yesterday_over_negative_put = (closingdays_yesterday_over_negative.select { |e| e.last < 0 }.map { |e| e.last }.inject(0, :+)/closingdays_yesterday_over_negative.size).round(2)
+closingdays_yesterday_small_positive_max = closingdays_yesterday_small_positive.map { |e| e.last }.max
+closingdays_yesterday_small_positive_min = closingdays_yesterday_small_positive.map { |e| e.last }.min
+closingdays_yesterday_small_negative_max = closingdays_yesterday_small_negative.map { |e| e.last }.max
+closingdays_yesterday_small_negative_min = closingdays_yesterday_small_negative.map { |e| e.last }.min
+closingdays_yesterday_over_positive_max = closingdays_yesterday_over_positive.map { |e| e.last }.max
+closingdays_yesterday_over_positive_min = closingdays_yesterday_over_positive.map { |e| e.last }.min
+closingdays_yesterday_over_negative_max = closingdays_yesterday_over_negative.map { |e| e.last }.max
+closingdays_yesterday_over_negative_min = closingdays_yesterday_over_negative.map { |e| e.last }.min
+puts "============週選結算日============"
+#puts "Call平均收在#{closingday_call}點"
+#puts "Put平均收在#{closingday_put}點"
+puts "當結算日前一天大漲超過#{over}點，Call平均收在#{closingdays_yesterday_over_positive_call}，Call最大收在#{closingdays_yesterday_over_positive_max}，Put平均收在#{closingdays_yesterday_over_positive_put}，Put最大收在#{closingdays_yesterday_over_positive_min}"
+puts "當結算日前一天小漲在#{over}點以內，Call平均收在#{closingdays_yesterday_small_positive_call}，Call最大收在#{closingdays_yesterday_small_positive_max}，Put平均收在#{closingdays_yesterday_small_positive_put}，Put最大收在#{closingdays_yesterday_small_positive_min}"
+puts "當結算日前一天大跌超過#{over}點，Put平均收在#{closingdays_yesterday_over_negative_put}，Put最大收在#{closingdays_yesterday_over_negative_min}，Call平均收在#{closingdays_yesterday_over_negative_call}，Call最大收在#{closingdays_yesterday_over_negative_max}"
+puts "當結算日前一天小跌在#{over}點以內，Put平均收在#{closingdays_yesterday_small_negative_put}，Put最大收在#{closingdays_yesterday_small_negative_min}，Call平均收在#{closingdays_yesterday_small_negative_call}，Call最大收在#{closingdays_yesterday_small_negative_max}"
